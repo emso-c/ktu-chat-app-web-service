@@ -34,30 +34,6 @@ class Message(BaseModel):
     content:str = None
     date:datetime = Field(default_factory=datetime.now)
 
-def parse_message(message:Message) -> Message:
-    """Parse message to json with string values"""
-    return {
-        "id": str(message.id),
-        "fromID": str(message.fromID),
-        "toID": str(message.toID),
-        "content": message.content,
-        "date": str(message.date),
-    }
-
-def get_all_received_messages():
-    # Message control logic here
-    for message in all_messages:
-        if message.toID == session.id:
-            yield message
-    return None
-
-def get_recently_received_messages():
-    # Message control logic here
-    for message in message_queue:
-        if message.toID == session.id:
-            yield message
-    return None
-
 STREAM_DELAY = 3  # second
 PING_INTERVAL = 30  # second
 
@@ -69,35 +45,78 @@ app = FastAPI()
 db = DBEngine("mobil.db")
 adap = DBAdapter(db)
 
+def parse_message(message:Message) -> Message:
+    """Parse message to json with string values"""
+    return {
+        "id": str(message.id),
+        "fromID": str(message.fromID),
+        "toID": str(message.toID),
+        "content": message.content,
+        "date": str(message.date),
+    }
+
+def parse_user(user:dict) -> User:
+    """Parse user dict to user object"""
+    return User(id=user["id"], username=user["name"], password=user["password"])
+
+def get_current_session(user:User) -> User:
+    for session in sessions:
+        if session.id == user.id:
+            return session
+    return None
+
+def add_session(user:User):
+    sessions.append(user)
+
+def remove_session(user:User):
+    for session in sessions:
+        if session.id == user.id:
+            sessions.remove(session)
+            return True
+    return False
+
+def get_received_messages(user:User, messages:list[Message]):
+    session = get_current_session(user)
+    if not session:
+        return None
+    for message in messages:
+        if message.toID == session.id:
+            yield message
+    return None
+
+def get_all_received_messages(user:User):
+    return get_received_messages(user, all_messages)
+
+def get_recently_received_messages(user:User):
+    return get_received_messages(user, message_queue)
+
 @app.get("/")
 async def root():
-    return {"message": "Hello World", "msg": "Welcome to Mobil Chat"}
+    return {"message": "Hello World", "msg": "Welcome to Chat App"}
 
 @app.post("/register/")
 async def register(user:UserRegister):
     if not user.username or not user.password:
-        return {"message": "Registration failed"}
+        return {"error": "Registration failed"}
     if adap.get_user_by_username(user.username):
-        return {"message": "User already exists"}
+        return {"error": "User already exists"}
     db.add_user(user.username, user.password)
     return {"message": "Registration successful"}
 
 @app.post("/login/")
 async def login(user:UserLogin):
     if not user.username or not user.password:
-        return {"message": "Login failed"}
+        return {"error": "Login failed"}
 
     found_user = adap.get_user_by_username_and_password(user.username, user.password)
     if not found_user:
-        return {"message": "Login failed"}
+        return {"error": "Login failed"}
 
-    sessions.append(User(
-        id=found_user['id'],
-        username=found_user['name'],
-        password=found_user['password'],
-    ))
-    session = sessions[-1]
-    return {"message": "Login successful", "username": session.username, "id": session.id}
+    user = parse_user(found_user)
+    if user not in sessions:
+        sessions.append(user)
+    
+    return {"message": "Login successful", "username": user.username, "id": user.id}
 
 @app.post("/logout/")
 async def logout(user:UserLogout):
@@ -108,11 +127,9 @@ async def logout(user:UserLogout):
     if not found_user:
         return {"message": "Logout failed"}
 
-    sessions.remove(User(
-        id=found_user['id'],
-        username=found_user['name'],
-        password=found_user['password'],
-    ))
+    user = parse_user(found_user)
+    if user in sessions:
+        sessions.remove(user)
     return {"message": "Logout successful"}
 
 @app.get("/users/")
