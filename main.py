@@ -24,6 +24,9 @@ class UserLogin(UserBase):
 class UserRegister(UserBase):
     pass
 
+class UserLogout(BaseModel):
+    id:int
+
 class Message(BaseModel):
     id:int = None
     fromID:int = None
@@ -60,7 +63,7 @@ PING_INTERVAL = 30  # second
 
 all_messages:list[Message] = []
 message_queue:list[Message] = []
-session:User = None
+sessions:list[User] = []
 
 app = FastAPI()
 db = DBEngine("mobil.db")
@@ -88,18 +91,37 @@ async def login(user:UserLogin):
     if not found_user:
         return {"message": "Login failed"}
 
-    # set session
-    session = User(
-        id=found_user["id"],
-        username=found_user["name"],
-        password=found_user["password"]
-    )
-    
+    sessions.append(User(
+        id=found_user['id'],
+        username=found_user['name'],
+        password=found_user['password'],
+    ))
+    session = sessions[-1]
     return {"message": "Login successful", "username": session.username, "id": session.id}
+
+@app.post("/logout/")
+async def logout(user:UserLogout):
+    if not user.id:
+        return {"message": "Logout failed"}
+    
+    found_user = adap.get_user(user.id)
+    if not found_user:
+        return {"message": "Logout failed"}
+
+    sessions.remove(User(
+        id=found_user['id'],
+        username=found_user['name'],
+        password=found_user['password'],
+    ))
+    return {"message": "Logout successful"}
 
 @app.get("/users/")
 async def users_view():
     return adap.get_users()
+
+@app.get("/sessions/")
+async def sessions_view():
+    return sessions
 
 
 @app.post("/message/")
