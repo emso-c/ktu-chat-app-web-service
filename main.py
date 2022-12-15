@@ -27,12 +27,22 @@ class UserRegister(UserBase):
 class UserLogout(BaseModel):
     id:int
 
+class UserMessage(BaseModel):
+    id:int
+    content:str
+
 class Message(BaseModel):
     id:int = None
     fromID:int = None
     toID:int = None
     content:str = None
     date:datetime = Field(default_factory=datetime.now)
+
+class MessageSend(BaseModel):
+    fromID:int
+    toID:int
+    content:str
+
 
 STREAM_DELAY = 3  # second
 PING_INTERVAL = 30  # second
@@ -141,22 +151,25 @@ async def sessions_view():
     return sessions
 
 
-@app.post("/message/")
-async def send_message(toID:int=None, content:str=None):
-    # TODO: validate & convert to post request
-    message = Message(
-        id=len(all_messages) + 1,
-        fromID = session.id,
-        toID = toID,
-        content = content,
-    )
-    message_queue.append(message)
-    all_messages.append(message)
-    return {"status": "success", "message": message, "total message amount": len(all_messages)}
+@app.post("/send_message/")
+async def send_message(message:MessageSend):
+    if not message.fromID or not message.toID or not message.content:
+        return {"error": "Message sending failed"}
 
-@app.get("/all_messages/")
-async def all_messages_view():
-    return [parse_message(message) for message in get_all_received_messages()]
+    message = Message(fromID=message.fromID, toID=message.toID, content=message.content)
+    try:
+        db.add_message(message.fromID, message.toID, message.content)
+    except Exception as e:
+        return {"error": "Message sending failed"}
+
+    all_messages.append(message)
+    message_queue.append(message)
+    return {"message": "Message sent"}
+
+
+@app.get("/messages/")
+async def messages_view():
+    return adap.get_messages()
 
 async def event_generator(request: Request):
     while True:
