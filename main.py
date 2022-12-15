@@ -44,7 +44,7 @@ class MessageSend(BaseModel):
     content:str
 
 
-STREAM_DELAY = 3  # second
+STREAM_DELAY = 1  # second
 PING_INTERVAL = 30  # second
 
 all_messages:list[Message] = []
@@ -150,7 +150,6 @@ async def users_view():
 async def sessions_view():
     return sessions
 
-
 @app.post("/send_message/")
 async def send_message(message:MessageSend):
     if not message.fromID or not message.toID or not message.content:
@@ -166,19 +165,25 @@ async def send_message(message:MessageSend):
     message_queue.append(message)
     return {"message": "Message sent"}
 
-
-@app.get("/messages/")
+@app.get("/all-messages/")
 async def messages_view():
     return adap.get_messages()
 
-async def event_generator(request: Request):
+@app.get("/received-messages/")
+async def received_messages_view(_id:int):
+    messages = adap.get_all_received_messages(_id)
+    return messages
+
+async def event_generator(request: Request, user_id:int):
     while True:
         if await request.is_disconnected():
             break
 
-        for i, message in enumerate(get_recently_received_messages()):
+        user = adap.get_user(user_id)
+        user = parse_user(user)
+        for message in get_recently_received_messages(user):
             yield {
-                "id": 0, # len(all_messages) + 1,
+                "id": 0,
                 "event": "message",
                 "data": parse_message(message),
                 "retry": 0
@@ -187,8 +192,8 @@ async def event_generator(request: Request):
         await asyncio.sleep(STREAM_DELAY)
 
 @app.get('/message-stream')
-async def message_stream(request: Request):
-    event_source = EventSourceResponse(event_generator(request))
+async def message_stream(request: Request, _id:int):
+    event_source = EventSourceResponse(event_generator(request, _id))
     event_source.ping_interval = PING_INTERVAL
     return event_source
 
