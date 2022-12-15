@@ -6,9 +6,23 @@ from datetime import datetime
 import socket
 from pydantic import BaseModel, Field
 
-class User(BaseModel):
-    id:int = None
-    username:str = None
+from db import DBEngine, DBAdapter
+
+
+class UserBase(BaseModel):
+    username:str
+    password:str 
+
+    class Config:
+        orm_mode = True
+class User(UserBase):
+    id:int
+
+class UserLogin(UserBase):
+    pass
+
+class UserRegister(UserBase):
+    pass
 
 class Message(BaseModel):
     id:int = None
@@ -46,28 +60,49 @@ PING_INTERVAL = 30  # second
 
 all_messages:list[Message] = []
 message_queue:list[Message] = []
-session:User = User(
-    id=1,
-    username="test",
-)
+session:User = None
+
 app = FastAPI()
+db = DBEngine("mobil.db")
+adap = DBAdapter(db)
 
 @app.get("/")
 async def root():
-    message = Message(
-        fromID=1,
-        toID=1,
-        content="hello",
+    return {"message": "Hello World", "msg": "Welcome to Mobil Chat"}
+
+@app.post("/register/")
+async def register(user:UserRegister):
+    if not user.username or not user.password:
+        return {"message": "Registration failed"}
+    if adap.get_user_by_username(user.username):
+        return {"message": "User already exists"}
+    db.add_user(user.username, user.password)
+    return {"message": "Registration successful"}
+
+@app.post("/login/")
+async def login(user:UserLogin):
+    if not user.username or not user.password:
+        return {"message": "Login failed"}
+
+    found_user = adap.get_user_by_username_and_password(user.username, user.password)
+    if not found_user:
+        return {"message": "Login failed"}
+
+    # set session
+    session = User(
+        id=found_user["id"],
+        username=found_user["name"],
+        password=found_user["password"]
     )
-    return {"message": "Hello World", "msg": message}
+    
+    return {"message": "Login successful", "username": session.username, "id": session.id}
 
-@app.get("/login/")
-async def login():
-    global session
-    session.username = "emir"
-    return {"message": "Login successful", "username": session.username}
+@app.get("/users/")
+async def users_view():
+    return adap.get_users()
 
-@app.get("/message/")
+
+@app.post("/message/")
 async def send_message(toID:int=None, content:str=None):
     # TODO: validate & convert to post request
     message = Message(
@@ -112,6 +147,4 @@ if __name__ == "__main__":
     print(f"Host Computer: {hostname} - {ip_address}")
 
     # run from terminal: uvicorn main:app --host 0.0.0.0 --port 8000 --reload 
-    uvicorn.run("my_app.main:app", host=ip_address, port=8002, reload=True)
-    uvicorn.run("sql_app.main:app", host=ip_address, port=8001, reload=True)
-    #uvicorn.run("__main__:app", host=ip_address, port=8000, reload=True)
+    uvicorn.run("__main__:app", host=ip_address, port=8000, reload=True)

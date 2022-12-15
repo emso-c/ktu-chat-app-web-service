@@ -89,6 +89,14 @@ class DBEngine:
         self.clear_all_messages()
         self.clear_all_users()
     
+    def user_exists(self, user_id:int) -> bool:
+        return self.get_user(user_id) is not None
+    
+    def get_user_by_username(self, username:str) -> tuple:
+        return self.cur.execute("SELECT * FROM users WHERE name=?", (username,)).fetchone()
+    
+    def get_user_by_username_and_password(self, username:str, password:str) -> tuple:
+        return self.cur.execute("SELECT * FROM users WHERE name=? AND password=?", (username, password)).fetchone()
 class DBAdapter:
     """A class to convert database responses to JSON format"""
     def __init__(self, db:DBEngine):
@@ -166,6 +174,29 @@ class DBAdapter:
     
     def clear_all(self):
         self.db.clear_all()
+    
+    def user_exists(self, user_id:int) -> bool:
+        return self.db.user_exists(user_id)
+    
+    def get_user_by_username(self, username:str) -> dict:
+        user = self.db.get_user_by_username(username)
+        if not user:
+            return None
+        return {
+            "id": user[0],
+            "name": user[1],
+            "password": user[2]
+        }
+    
+    def get_user_by_username_and_password(self, username:str, password:str) -> dict:
+        user = self.db.get_user_by_username_and_password(username, password)
+        if not user:
+            return None
+        return {
+            "id": user[0],
+            "name": user[1],
+            "password": user[2]
+        }
 
 
 """ USAGE EXAMPLE 
