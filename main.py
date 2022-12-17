@@ -12,7 +12,7 @@ app.include_router(user_router)
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World", "msg": "Welcome to Chat App"}
+    return {"message": "Hello World"}
 
 if __name__ == "__main__":
     hostname=socket.gethostname()
