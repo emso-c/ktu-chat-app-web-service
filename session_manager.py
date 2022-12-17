@@ -1,6 +1,9 @@
+from db import DBAdapter, DBEngine
 from schemas.message import Message
 from schemas.user import User
 
+_db = DBEngine("mobil.db")
+_adap = DBAdapter(_db)
 
 sessions:list[User] = []
 all_messages:list[Message] = []
@@ -32,6 +35,7 @@ def get_received_messages(user:User, messages:list[Message]):
     return None
 
 def get_all_received_messages(user:User):
+    all_messages = _adap.get_all_received_messages(user.id)
     return get_received_messages(user, all_messages)
 
 def get_recently_received_messages(user:User):
