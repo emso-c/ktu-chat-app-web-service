@@ -20,7 +20,8 @@ async def send_message(message:MessageSend):
 
     message = Message(fromID=message.fromID, toID=message.toID, content=message.content)
     try:
-        db.add_message(message.fromID, message.toID, message.content)
+        last_inserted_id = db.add_message(message.fromID, message.toID, message.content)
+        return {"id": last_inserted_id}
     except Exception as e:
         return {"error": "Message sending failed"}
 
