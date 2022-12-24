@@ -19,15 +19,15 @@ async def send_message(message:MessageSend):
         return {"error": "Message sending failed"}
 
     message = Message(fromID=message.fromID, toID=message.toID, content=message.content)
+    last_inserted_id = None
     try:
         last_inserted_id = db.add_message(message.fromID, message.toID, message.content)
-        return {"id": last_inserted_id}
     except Exception as e:
         return {"error": "Message sending failed"}
 
     all_messages.append(message)
     message_queue.append(message)
-    return {"message": "Message sent"}
+    return {"id": last_inserted_id}
 
 @message_router.get("/all-messages/")
 async def messages_view():
