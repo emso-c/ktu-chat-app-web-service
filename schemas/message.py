@@ -6,7 +6,7 @@ class Message(BaseModel):
     fromID:int = None
     toID:int = None
     content:str = None
-    date:datetime = Field(default_factory=datetime.now)
+    date:datetime = Field(default_factory=datetime.now().strftime("%d-%m-%Y %H:%M:%S"))
 
 class MessageSend(BaseModel):
     fromID:int
