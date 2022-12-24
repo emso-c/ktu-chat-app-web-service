@@ -13,7 +13,7 @@ message_router = APIRouter()
 db = DBEngine("mobil.db")
 adap = DBAdapter(db)
 
-@message_router.post("/send_message/")
+@message_router.post("/send-message/")
 async def send_message(message:MessageSend):
     if not message.fromID or not message.toID or not message.content:
         return {"error": "Message sending failed"}
