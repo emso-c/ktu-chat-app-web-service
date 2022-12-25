@@ -5,7 +5,7 @@ class DBEngine:
     def __init__(self, db_name):
         self.con = sqlite3.connect(db_name)
         self.cur = self.con.cursor()
-        self.cur.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, password TEXT)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, password TEXT, firebase_uid TEXT)")
         self.cur.execute("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, fromID INTEGER, toID INTEGER, content TEXT, date TEXT)")
         self.con.commit()
 
@@ -15,8 +15,8 @@ class DBEngine:
     def info(self):
         return self.cur.execute("SELECT * FROM sqlite_master WHERE type='table'").fetchall()
 
-    def add_user(self, name:str, password:str) -> int:
-        self.cur.execute("INSERT INTO users VALUES (null, ?, ?)", (name, password))
+    def add_user(self, name:str, password:str, firebase_uid:str) -> int:
+        self.cur.execute("INSERT INTO users (name, password, firebase_uid) VALUES (?, ?, ?)", (name, password, firebase_uid))
         self.con.commit()
         return self.cur.lastrowid
 
@@ -25,6 +25,9 @@ class DBEngine:
     
     def get_user_by_name(self, name:str) -> tuple:
         return self.cur.execute("SELECT * FROM users WHERE name=?", (name,)).fetchone()
+
+    def get_user_by_firebase_uid(self, firebase_uid:str) -> tuple:
+        return self.cur.execute("SELECT * FROM users WHERE firebase_uid=?", (firebase_uid,)).fetchone()
     
     def get_users(self) -> list:
         return self.cur.execute("SELECT * FROM users").fetchall()
@@ -33,8 +36,8 @@ class DBEngine:
         self.cur.execute("DELETE FROM users WHERE id=?", (user_id,))
         self.con.commit()
     
-    def update_user(self, user_id:int, name:str, password:str):
-        self.cur.execute("UPDATE users SET name=?, password=? WHERE id=?", (name, password, user_id))
+    def update_user(self, user_id:int, name:str, password:str, firebase_uid:str):
+        self.cur.execute("UPDATE users SET name=?, password=?, firebase_uid=? WHERE id=?", (name, password, firebase_uid, user_id))
         self.con.commit()
 
     def add_message(self, fromID:int, toID:int, content:str, date:str=None) -> int:
@@ -43,7 +46,7 @@ class DBEngine:
         if not self.get_user(toID):
             raise Exception("User with id {} does not exist".format(toID))
         if not date:
-            date = date or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            date = date or datetime.now().strftime("%d-%m-%Y %H:%M:%S")
         self.cur.execute("INSERT INTO messages VALUES (null, ?, ?, ?, ?)", (fromID, toID, content, date))
         self.con.commit()
         return self.cur.lastrowid
@@ -67,7 +70,7 @@ class DBEngine:
         if not self.get_user(toID):
             raise Exception("User with id {} does not exist".format(toID))
         if not date:
-            date = date or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            date = date or datetime.now().strftime("%d-%m-%Y %H:%M:%S")
         self.cur.execute("UPDATE messages SET fromID=?, toID=?, content=?, date=? WHERE id=?", (fromID, toID, content, date, message_id))
         self.con.commit()
     
@@ -97,6 +100,7 @@ class DBEngine:
     
     def get_user_by_username_and_password(self, username:str, password:str) -> tuple:
         return self.cur.execute("SELECT * FROM users WHERE name=? AND password=?", (username, password)).fetchone()
+
 class DBAdapter:
     """A class to convert database responses to JSON format"""
     def __init__(self, db:DBEngine):
@@ -109,7 +113,8 @@ class DBAdapter:
         return {
             "id": user[0],
             "name": user[1],
-            "password": user[2]
+            "password": user[2],
+            "firebase_uid": user[3]
         }
     
     def get_users(self) -> list:
@@ -117,7 +122,8 @@ class DBAdapter:
         return [{
             "id": user[0],
             "name": user[1],
-            "password": user[2]
+            "password": user[2],
+            "firebase_uid": user[3]
         } for user in users]
     
     def get_message(self, message_id:int) -> dict:
@@ -185,7 +191,8 @@ class DBAdapter:
         return {
             "id": user[0],
             "name": user[1],
-            "password": user[2]
+            "password": user[2],
+            "firebase_uid": user[3]
         }
     
     def get_user_by_username_and_password(self, username:str, password:str) -> dict:
@@ -195,7 +202,19 @@ class DBAdapter:
         return {
             "id": user[0],
             "name": user[1],
-            "password": user[2]
+            "password": user[2],
+            "firebase_uid": user[3]
+        }
+    
+    def get_user_by_firebase_uid(self, firebase_uid:str) -> dict:
+        user = self.db.get_user_by_firebase_uid(firebase_uid)
+        if not user:
+            return None
+        return {
+            "id": user[0],
+            "name": user[1],
+            "password": user[2],
+            "firebase_uid": user[3]
         }
 
 
