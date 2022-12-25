@@ -84,6 +84,11 @@ async def received_messages_by_users_view(_id:int):
             users[message["fromID"]]["last_message_date"] = message["date"]
     return users
 
+@message_router.delete("/delete-message/")
+async def delete_message(_id:int):
+    db.delete_message(_id)
+    return {"status": "success"}
+
 async def event_generator(request: Request, user_id:int):
     while True:
         if await request.is_disconnected():

@@ -61,8 +61,9 @@ class DBEngine:
         return self.cur.execute("SELECT * FROM messages WHERE fromID=? OR toID=?", (user_id, user_id)).fetchall()
     
     def delete_message(self, message_id:int):
-        self.cur.execute("DELETE FROM messages WHERE id=?", (message_id,))
+        result = self.cur.execute("DELETE FROM messages WHERE id=?", (message_id,))
         self.con.commit()
+        return result
     
     def update_message(self, message_id:int, fromID:int, toID:int, content:str, date:str):
         if not self.get_user(fromID):
