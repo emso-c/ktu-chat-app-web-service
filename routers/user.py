@@ -1,6 +1,6 @@
 
 from db import DBAdapter, DBEngine
-from schemas.user import UserLogin, UserLogout, UserRegister
+from schemas.user import UserLogin, UserLogout, UserRegister, FirebaseUser
 from fastapi import APIRouter
 from session_manager import sessions
 from utils import parse_user
@@ -9,13 +9,22 @@ user_router = APIRouter()
 db = DBEngine("mobil.db")
 adap = DBAdapter(db)
 
+@user_router.post("/get-user-by-firebase-uid/")
+async def get_user_by_firebase_uid(fb_user:FirebaseUser):
+    if not fb_user.firebase_uid:
+        return {"error": "Invalid Firebase UID"}
+    user = adap.get_user_by_firebase_uid(fb_user.firebase_uid)
+    if not user:
+        return {"error": "User not found"}
+    return user
+
 @user_router.post("/register/")
 async def register(user:UserRegister):
-    if not user.username or not user.password:
-        return {"error": "Registration failed"}
+    if not user.username or not user.password or not user.firebase_uid:
+        return {"error": "Invalid parameters"}
     if adap.get_user_by_username(user.username):
         return {"error": "User already exists"}
-    db.add_user(user.username, user.password)
+    db.add_user(user.username, user.password, user.firebase_uid)
     return {"message": "Registration successful"}
 
 @user_router.get("/users/")
