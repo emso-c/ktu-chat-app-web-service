@@ -27,6 +27,21 @@ async def register(user:UserRegister):
     db.add_user(user.username, user.password, user.firebase_uid)
     return {"message": "Registration successful"}
 
+@user_router.delete("/delete-user/")
+async def delete_user(user:UserLogout):
+    if not user.id:
+        return {"message": "Invalid id"}
+    
+    found_user = adap.get_user(user.id)
+    if not found_user:
+        return {"message": "User not found"}
+
+    user = parse_user(found_user)
+    if user in sessions:
+        sessions.remove(user)
+    db.delete_user(user.id)
+    return {"message": "Delete successful"}
+
 @user_router.get("/users/")
 async def users_view():
     return adap.get_users()
