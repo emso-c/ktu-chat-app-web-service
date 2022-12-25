@@ -10,6 +10,7 @@ def parse_message(message:Message) -> Message:
         "toID": str(message.toID),
         "content": message.content,
         "date": str(message.date),
+        "seen": str(message.seen),
     }
 
 def parse_user(user:dict) -> User:
