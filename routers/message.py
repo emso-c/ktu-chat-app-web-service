@@ -38,6 +38,52 @@ async def received_messages_view(_id:int):
     messages = adap.get_all_received_messages(_id)
     return messages
 
+@message_router.get("/received-messages-by-users/")
+async def received_messages_by_users_view(_id:int):
+    received_messages:list[dict] = adap.get_all_received_messages(_id)
+    sent_messages:list[dict] = adap.get_all_sent_messages(_id)
+    messages = received_messages + sent_messages
+    messages.sort(key=lambda x: x["date"])
+    users = {}
+    for message in messages:
+        if message["fromID"] is _id:
+            if message["toID"] not in users:
+                user = adap.get_user(message["toID"])
+                users[message["toID"]] = {
+                    "messages": [],
+                    "username": user["name"],
+                    "firebase_uid": user["firebase_uid"],
+                    "last_message": None,
+                    "last_message_date": None,
+                    "unseen_messages": 0,
+                }
+            else:
+                #if message["seen"] == 0:
+                #    users[message["toID"]]["unseen_messages"] += 1
+                pass
+            users[message["toID"]]["messages"].append(message)
+            users[message["toID"]]["last_message"] = message["content"]
+            users[message["toID"]]["last_message_date"] = message["date"]
+        else:
+            if message["fromID"] not in users:
+                user = adap.get_user(message["fromID"])
+                users[message["fromID"]] = {
+                    "messages": [],
+                    "username": user["name"],
+                    "firebase_uid": user["firebase_uid"],
+                    "last_message": None,
+                    "last_message_date": None,
+                    "unseen_messages": 0,
+                }
+            else:
+                #if message["seen"] == 0:
+                #    users[message["fromID"]]["unseen_messages"] += 1
+                pass
+            users[message["fromID"]]["messages"].append(message)
+            users[message["fromID"]]["last_message"] = message["content"]
+            users[message["fromID"]]["last_message_date"] = message["date"]
+    return users
+
 async def event_generator(request: Request, user_id:int):
     while True:
         if await request.is_disconnected():
