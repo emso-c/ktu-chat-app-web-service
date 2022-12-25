@@ -7,6 +7,7 @@ class Message(BaseModel):
     toID:int = None
     content:str = None
     date:datetime = Field(default_factory=datetime.now)
+    seen:bool = False
 
 class MessageSend(BaseModel):
     fromID:int

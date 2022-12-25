@@ -47,7 +47,7 @@ class DBEngine:
             raise Exception("User with id {} does not exist".format(toID))
         if not date:
             date = date or datetime.now().strftime("%d-%m-%Y %H:%M:%S")
-        self.cur.execute("INSERT INTO messages VALUES (null, ?, ?, ?, ?)", (fromID, toID, content, date))
+        self.cur.execute("INSERT INTO messages VALUES (null, ?, ?, ?, ?, ?)", (fromID, toID, content, date, False))
         self.con.commit()
         return self.cur.lastrowid
     
