@@ -135,7 +135,8 @@ class DBAdapter:
             "fromID": message[1],
             "toID": message[2],
             "content": message[3],
-            "date": message[4]
+            "date": message[4],
+            "seen": message[5]
         }
     
     def get_messages(self) -> list:
@@ -145,7 +146,8 @@ class DBAdapter:
             "fromID": message[1],
             "toID": message[2],
             "content": message[3],
-            "date": message[4]
+            "date": message[4],
+            "seen": message[5]
         } for message in messages]
     
     def get_messages_by_user(self, user_id:int) -> list:
@@ -155,7 +157,8 @@ class DBAdapter:
             "fromID": message[1],
             "toID": message[2],
             "content": message[3],
-            "date": message[4]
+            "date": message[4],
+            "seen": message[5]
         } for message in messages]
     
     def get_all_received_messages(self, user_id:int) -> list:
@@ -165,7 +168,8 @@ class DBAdapter:
             "fromID": message[1],
             "toID": message[2],
             "content": message[3],
-            "date": message[4]
+            "date": message[4],
+            "seen": message[5]
         } for message in messages]
     
     def get_all_sent_messages(self, user_id:int) -> list:
@@ -175,7 +179,8 @@ class DBAdapter:
             "fromID": message[1],
             "toID": message[2],
             "content": message[3],
-            "date": message[4]
+            "date": message[4],
+            "seen": message[5]
         } for message in messages]
     
     def clear_all(self):

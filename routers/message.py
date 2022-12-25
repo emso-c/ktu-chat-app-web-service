@@ -58,8 +58,8 @@ async def received_messages_by_users_view(_id:int):
                     "unseen_messages": 0,
                 }
             else:
-                #if message["seen"] == 0:
-                #    users[message["toID"]]["unseen_messages"] += 1
+                if message["seen"] == 0:
+                    users[message["toID"]]["unseen_messages"] += 1
                 pass
             users[message["toID"]]["messages"].append(message)
             users[message["toID"]]["last_message"] = message["content"]
@@ -76,8 +76,8 @@ async def received_messages_by_users_view(_id:int):
                     "unseen_messages": 0,
                 }
             else:
-                #if message["seen"] == 0:
-                #    users[message["fromID"]]["unseen_messages"] += 1
+                if message["seen"] == 0:
+                    users[message["fromID"]]["unseen_messages"] += 1
                 pass
             users[message["fromID"]]["messages"].append(message)
             users[message["fromID"]]["last_message"] = message["content"]
