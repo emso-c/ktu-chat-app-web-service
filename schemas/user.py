@@ -18,10 +18,10 @@ class UserLogin(UserBase):
 
 
 class UserRegister(UserBase):
-    pass
+    firebase_uid:str
 
 class FirebaseUser(BaseModel):
-    uid:str
+    firebase_uid:str
 
 class UserLogout(BaseModel):
     id:int
