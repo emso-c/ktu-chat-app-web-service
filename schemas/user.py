@@ -20,6 +20,8 @@ class UserLogin(UserBase):
 class UserRegister(UserBase):
     pass
 
+class FirebaseUser(BaseModel):
+    uid:str
 
 class UserLogout(BaseModel):
     id:int
