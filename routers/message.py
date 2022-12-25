@@ -16,14 +16,14 @@ adap = DBAdapter(db)
 @message_router.post("/send-message/")
 async def send_message(message:MessageSend):
     if not message.fromID or not message.toID or not message.content:
-        return {"error": "Message sending failed"}
+        return {"error": "Invalid parameters"}
 
     message = Message(fromID=message.fromID, toID=message.toID, content=message.content)
     last_inserted_id = None
     try:
         last_inserted_id = db.add_message(message.fromID, message.toID, message.content)
     except Exception as e:
-        return {"error": "Message sending failed"}
+        return {"error": "Message sending failed", "exception": e.__str__()}
 
     all_messages.append(message)
     message_queue.append(message)
