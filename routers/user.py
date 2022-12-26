@@ -78,7 +78,7 @@ async def login(user:UserLogin):
     user = parse_user(found_user)
     if user not in sessions:
         sessions.append(user)
-    
+    db.update_user_is_online(user.id, True)
     return {"message": "Login successful", "username": user.username, "id": user.id}
 
 @user_router.post("/logout/")
@@ -93,6 +93,8 @@ async def logout(user:UserLogout):
     user = parse_user(found_user)
     if user in sessions:
         sessions.remove(user)
+    db.update_user_is_online(user.id, False)
+    db.update_user_last_seen(user.id)
     return {"message": "Logout successful"}
 
 @user_router.get("/sessions/")
