@@ -62,6 +62,7 @@ async def chat_history(_id:int):
             users[message["toID"]]["last_message"] = message["content"]
             users[message["toID"]]["last_message_date"] = message["date"]
         else:
+            last_message:str = "✔✔ "
             if message["fromID"] not in users:
                 user = adap.get_user(message["fromID"])
                 users[message["fromID"]] = {
@@ -76,8 +77,9 @@ async def chat_history(_id:int):
             else:
                 if message["seen"] == 0:
                     users[message["fromID"]]["unseen_messages"] += 1
+                    last_message = "✔ "
             users[message["fromID"]]["messages"].append(message)
-            users[message["fromID"]]["last_message"] = message["content"]
+            users[message["fromID"]]["last_message"] = last_message + message["content"]
             users[message["fromID"]]["last_message_date"] = message["date"]
     return users
 
