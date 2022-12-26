@@ -20,5 +20,9 @@ def parse_user(user:dict) -> User:
         username=user["name"],
         password=user["password"],
         # don't need to parse firebase_uid as it's only used for syncing
-        last_seen=user["last_seen"]
+        last_seen=user["last_seen"],
+        photo_url=user["photo_url"],
+        is_online=user["is_online"],
+        is_typing=user["is_typing"],
+        status=user["status"]
     )
