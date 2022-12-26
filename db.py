@@ -133,6 +133,11 @@ class DBEngine:
         self.cur.execute("UPDATE users SET photo_url=? WHERE id=?", (photo_url, user_id))
         self.con.commit()
         return self.get_user(user_id)
+    
+    def set_message_seen(self, message_id:int, seen:bool):
+        self.cur.execute("UPDATE messages SET seen=? WHERE id=?", (seen, message_id))
+        self.con.commit()
+        return self.get_message(message_id)
 
 class DBAdapter:
     """A class to convert database responses to JSON format"""
