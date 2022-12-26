@@ -15,4 +15,10 @@ def parse_message(message:Message) -> Message:
 
 def parse_user(user:dict) -> User:
     """Parse user dict to user object"""
-    return User(id=user["id"], username=user["name"], password=user["password"])
+    return User(
+        id=user["id"],
+        username=user["name"],
+        password=user["password"],
+        # don't need to parse firebase_uid as it's only used for syncing
+        last_seen=user["last_seen"]
+    )
