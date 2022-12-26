@@ -5,7 +5,7 @@ class DBEngine:
     def __init__(self, db_name):
         self.con = sqlite3.connect(db_name)
         self.cur = self.con.cursor()
-        self.cur.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, password TEXT, firebase_uid TEXT, last_seen TEXT)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, password TEXT, firebase_uid TEXT, last_seen TEXT, photo_url TEXT, is_online BOOLEAN, is_typing BOOLEAN, status TEXT)")
         self.cur.execute("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, fromID INTEGER, toID INTEGER, content TEXT, date TEXT, seen BOOLEAN DEFAULT 0)")
         self.con.commit()
 
@@ -15,10 +15,10 @@ class DBEngine:
     def info(self):
         return self.cur.execute("SELECT * FROM sqlite_master WHERE type='table'").fetchall()
 
-    def add_user(self, name:str, password:str, firebase_uid:str, date:str=None) -> int:
+    def add_user(self, name:str, password:str, firebase_uid:str, date:str="", photo_url:str="") -> int:
         if not date:
             date = date or datetime.now().strftime("%d-%m-%Y %H:%M:%S")
-        self.cur.execute("INSERT INTO users (name, password, firebase_uid, last_seen) VALUES (?, ?, ?, ?)", (name, password, firebase_uid, date))
+        self.cur.execute("INSERT INTO users (name, password, firebase_uid, last_seen, photo_url) VALUES (?, ?, ?, ?, ?)", (name, password, firebase_uid, date, photo_url))
         self.con.commit()
         return self.cur.lastrowid
 
@@ -38,10 +38,10 @@ class DBEngine:
         self.cur.execute("DELETE FROM users WHERE id=?", (user_id,))
         self.con.commit()
     
-    def update_user(self, user_id:int, name:str, password:str, firebase_uid:str, date:str):
+    def update_user(self, user_id:int, name:str, password:str, firebase_uid:str, date:str, photo_url:str="", is_online:bool=False, is_typing:bool=False, status:str=""):
         if not date:
             date = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
-        self.cur.execute("UPDATE users SET name=?, password=?, firebase_uid=? last_seen=? WHERE id=?", (name, password, firebase_uid, user_id, date))
+        self.cur.execute("UPDATE users SET name=?, password=?, firebase_uid=?, last_seen=?, photo_url=?, is_online=?, is_typing=?, status=? WHERE id=?",(name, password, firebase_uid, date, photo_url, is_online, is_typing, status, user_id))
         self.con.commit()
 
     def add_message(self, fromID:int, toID:int, content:str, date:str=None) -> int:
@@ -109,8 +109,30 @@ class DBEngine:
     def update_user_last_seen(self, user_id:int, date:str=None):
         if not date:
             date = date or datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+        # update and return the updated user
         self.cur.execute("UPDATE users SET last_seen=? WHERE id=?", (date, user_id))
         self.con.commit()
+        return self.get_user(user_id)
+
+    def update_user_is_online(self, user_id:int, is_online:bool):
+        self.cur.execute("UPDATE users SET is_online=? WHERE id=?", (is_online, user_id))
+        self.con.commit()
+        return self.get_user(user_id)
+    
+    def update_user_is_typing(self, user_id:int, is_typing:bool):
+        self.cur.execute("UPDATE users SET is_typing=? WHERE id=?", (is_typing, user_id))
+        self.con.commit()
+        return self.get_user(user_id)
+    
+    def update_user_status(self, user_id:int, status:str):
+        self.cur.execute("UPDATE users SET status=? WHERE id=?", (status, user_id))
+        self.con.commit()
+        return self.get_user(user_id)
+    
+    def update_user_photo_url(self, user_id:int, photo_url:str):
+        self.cur.execute("UPDATE users SET photo_url=? WHERE id=?", (photo_url, user_id))
+        self.con.commit()
+        return self.get_user(user_id)
 
 class DBAdapter:
     """A class to convert database responses to JSON format"""
@@ -172,9 +194,6 @@ class DBAdapter:
         if not user:
             return None
         return _user_to_dict(user)
-    
-    def update_user_last_seen(self, user_id:int, date:str=None):
-        self.db.update_user_last_seen(user_id, date)
 
 def _user_to_dict(user:list) -> dict:
     return {
@@ -182,7 +201,11 @@ def _user_to_dict(user:list) -> dict:
         "name": user[1],
         "password": user[2],
         "firebase_uid": user[3],
-        "last_seen": user[4]
+        "last_seen": user[4],
+        "photo_url": user[5],
+        "is_online": user[6],
+        "is_typing": user[7],
+        "status": user[8]
     }
 
 def _message_to_dict(message:list) -> dict:
