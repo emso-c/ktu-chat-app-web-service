@@ -80,8 +80,8 @@ async def login(user:UserLogin):
     if user.id not in [user.id for user in sessions]:
         print("session added", user.id)
         sessions.append(user)
+        return {"message": "Login successful", "username": user.username, "id": user.id}
     db.update_user_is_online(user.id, True)
-    return {"message": "Login successful", "username": user.username, "id": user.id}
 
 @user_router.post("/logout/")
 async def logout(user:UserLogout):
