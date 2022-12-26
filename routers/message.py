@@ -132,6 +132,15 @@ async def event_generator(request: Request, user_id:int):
                 "retry": 0
             }
             message_queue.remove(message)
+        global newly_seen_messages_exists
+        if newly_seen_messages_exists:
+            yield {
+                "id": 0,
+                "event": "seen",
+                "data": "seen",
+                "retry": 0
+            }
+            newly_seen_messages_exists = False
         await asyncio.sleep(STREAM_DELAY)
 
 @message_router.get('/message-stream')
