@@ -107,7 +107,7 @@ async def get_chat_history_with_user(_id:int, _target_id:int):
             user["messages"].append(message)
             user["last_message"] = message["content"]
             user["last_message_date"] = message["date"]
-            if message["fromID"] == _target_id and message["seen"] == 0:
+            if message["fromID"] != _id and message["seen"] == 0:
                 user["unseen_messages"] += 1
     return user
 
