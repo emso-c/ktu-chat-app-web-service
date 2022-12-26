@@ -12,6 +12,10 @@ class UserBase(BaseModel):
 class User(UserBase):
     id:int
     last_seen:str=None
+    photo_url:str=None
+    is_online:bool=False
+    is_typing:bool=False
+    status:str=None
 
 
 class UserLogin(UserBase):
