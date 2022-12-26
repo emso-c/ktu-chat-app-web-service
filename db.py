@@ -5,8 +5,8 @@ class DBEngine:
     def __init__(self, db_name):
         self.con = sqlite3.connect(db_name)
         self.cur = self.con.cursor()
-        self.cur.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, password TEXT, firebase_uid TEXT)")
-        self.cur.execute("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, fromID INTEGER, toID INTEGER, content TEXT, date TEXT)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, password TEXT, firebase_uid TEXT, last_seen TEXT)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, fromID INTEGER, toID INTEGER, content TEXT, date TEXT, seen BOOLEAN DEFAULT 0)")
         self.con.commit()
 
     def __del__(self):
@@ -15,8 +15,10 @@ class DBEngine:
     def info(self):
         return self.cur.execute("SELECT * FROM sqlite_master WHERE type='table'").fetchall()
 
-    def add_user(self, name:str, password:str, firebase_uid:str) -> int:
-        self.cur.execute("INSERT INTO users (name, password, firebase_uid) VALUES (?, ?, ?)", (name, password, firebase_uid))
+    def add_user(self, name:str, password:str, firebase_uid:str, date:str=None) -> int:
+        if not date:
+            date = date or datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+        self.cur.execute("INSERT INTO users (name, password, firebase_uid, last_seen) VALUES (?, ?, ?, ?)", (name, password, firebase_uid, date))
         self.con.commit()
         return self.cur.lastrowid
 
@@ -36,8 +38,10 @@ class DBEngine:
         self.cur.execute("DELETE FROM users WHERE id=?", (user_id,))
         self.con.commit()
     
-    def update_user(self, user_id:int, name:str, password:str, firebase_uid:str):
-        self.cur.execute("UPDATE users SET name=?, password=?, firebase_uid=? WHERE id=?", (name, password, firebase_uid, user_id))
+    def update_user(self, user_id:int, name:str, password:str, firebase_uid:str, date:str):
+        if not date:
+            date = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+        self.cur.execute("UPDATE users SET name=?, password=?, firebase_uid=? last_seen=? WHERE id=?", (name, password, firebase_uid, user_id, date))
         self.con.commit()
 
     def add_message(self, fromID:int, toID:int, content:str, date:str=None) -> int:
@@ -46,7 +50,7 @@ class DBEngine:
         if not self.get_user(toID):
             raise Exception("User with id {} does not exist".format(toID))
         if not date:
-            date = date or datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+            date = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
         self.cur.execute("INSERT INTO messages VALUES (null, ?, ?, ?, ?, ?)", (fromID, toID, content, date, False))
         self.con.commit()
         return self.cur.lastrowid
@@ -71,7 +75,7 @@ class DBEngine:
         if not self.get_user(toID):
             raise Exception("User with id {} does not exist".format(toID))
         if not date:
-            date = date or datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+            date = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
         self.cur.execute("UPDATE messages SET fromID=?, toID=?, content=?, date=? WHERE id=?", (fromID, toID, content, date, message_id))
         self.con.commit()
     
@@ -101,6 +105,12 @@ class DBEngine:
     
     def get_user_by_username_and_password(self, username:str, password:str) -> tuple:
         return self.cur.execute("SELECT * FROM users WHERE name=? AND password=?", (username, password)).fetchone()
+    
+    def update_user_last_seen(self, user_id:int, date:str=None):
+        if not date:
+            date = date or datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+        self.cur.execute("UPDATE users SET last_seen=? WHERE id=?", (date, user_id))
+        self.con.commit()
 
 class DBAdapter:
     """A class to convert database responses to JSON format"""
@@ -111,78 +121,33 @@ class DBAdapter:
         user = self.db.get_user(user_id)
         if not user:
             return None
-        return {
-            "id": user[0],
-            "name": user[1],
-            "password": user[2],
-            "firebase_uid": user[3]
-        }
+        return _user_to_dict(user)
     
     def get_users(self) -> list:
         users = self.db.get_users()
-        return [{
-            "id": user[0],
-            "name": user[1],
-            "password": user[2],
-            "firebase_uid": user[3]
-        } for user in users]
+        return [_user_to_dict(user) for user in users]
     
     def get_message(self, message_id:int) -> dict:
         message = self.db.get_message(message_id)
         if not message:
             return None
-        return {
-            "id": message[0],
-            "fromID": message[1],
-            "toID": message[2],
-            "content": message[3],
-            "date": message[4],
-            "seen": message[5]
-        }
+        return _message_to_dict(message)
     
     def get_messages(self) -> list:
         messages = self.db.get_messages()
-        return [{
-            "id": message[0],
-            "fromID": message[1],
-            "toID": message[2],
-            "content": message[3],
-            "date": message[4],
-            "seen": message[5]
-        } for message in messages]
+        return [_message_to_dict(message) for message in messages]
     
     def get_messages_by_user(self, user_id:int) -> list:
         messages = self.db.get_messages_by_user(user_id)
-        return [{
-            "id": message[0],
-            "fromID": message[1],
-            "toID": message[2],
-            "content": message[3],
-            "date": message[4],
-            "seen": message[5]
-        } for message in messages]
+        return [_message_to_dict(message) for message in messages]
     
     def get_all_received_messages(self, user_id:int) -> list:
         messages = self.db.get_all_received_messages(user_id)
-        return [{
-            "id": message[0],
-            "fromID": message[1],
-            "toID": message[2],
-            "content": message[3],
-            "date": message[4],
-            "seen": message[5]
-        } for message in messages]
+        return [_message_to_dict(message) for message in messages]
     
     def get_all_sent_messages(self, user_id:int) -> list:
         messages = self.db.get_all_sent_messages(user_id)
-        return [{
-            "id": message[0],
-            "fromID": message[1],
-            "toID": message[2],
-            "content": message[3],
-            "date": message[4],
-            "seen": message[5]
-        } for message in messages]
+        return [_message_to_dict(message) for message in messages]
     
     def clear_all(self):
         self.db.clear_all()
@@ -194,35 +159,41 @@ class DBAdapter:
         user = self.db.get_user_by_username(username)
         if not user:
             return None
-        return {
-            "id": user[0],
-            "name": user[1],
-            "password": user[2],
-            "firebase_uid": user[3]
-        }
+        return _user_to_dict(user)
     
     def get_user_by_username_and_password(self, username:str, password:str) -> dict:
         user = self.db.get_user_by_username_and_password(username, password)
         if not user:
             return None
-        return {
-            "id": user[0],
-            "name": user[1],
-            "password": user[2],
-            "firebase_uid": user[3]
-        }
+        return _user_to_dict(user)
     
     def get_user_by_firebase_uid(self, firebase_uid:str) -> dict:
         user = self.db.get_user_by_firebase_uid(firebase_uid)
         if not user:
             return None
-        return {
-            "id": user[0],
-            "name": user[1],
-            "password": user[2],
-            "firebase_uid": user[3]
-        }
+        return _user_to_dict(user)
+    
+    def update_user_last_seen(self, user_id:int, date:str=None):
+        self.db.update_user_last_seen(user_id, date)
 
+def _user_to_dict(user:list) -> dict:
+    return {
+        "id": user[0],
+        "name": user[1],
+        "password": user[2],
+        "firebase_uid": user[3],
+        "last_seen": user[4]
+    }
+
+def _message_to_dict(message:list) -> dict:
+    return {
+        "id": message[0],
+        "fromID": message[1],
+        "toID": message[2],
+        "content": message[3],
+        "date": message[4],
+        "seen": message[5]
+    }
 
 """ USAGE EXAMPLE 
 db = DBEngine("mobil.db")
