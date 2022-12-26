@@ -38,8 +38,8 @@ async def received_messages_view(_id:int):
     messages = adap.get_all_received_messages(_id)
     return messages
 
-@message_router.get("/received-messages-by-users/")
-async def received_messages_by_users_view(_id:int):
+@message_router.get("/chat-history/")
+async def chat_history(_id:int):
     received_messages:list[dict] = adap.get_all_received_messages(_id)
     sent_messages:list[dict] = adap.get_all_sent_messages(_id)
     messages = received_messages + sent_messages
@@ -55,6 +55,7 @@ async def received_messages_by_users_view(_id:int):
                     "firebase_uid": user["firebase_uid"],
                     "last_message": None,
                     "last_message_date": None,
+                    "last_seen": user["last_seen"],
                     "unseen_messages": 0,
                 }
             users[message["toID"]]["messages"].append(message)
@@ -69,6 +70,7 @@ async def received_messages_by_users_view(_id:int):
                     "firebase_uid": user["firebase_uid"],
                     "last_message": None,
                     "last_message_date": None,
+                    "last_seen": user["last_seen"],
                     "unseen_messages": 0,
                 }
             else:
@@ -78,6 +80,35 @@ async def received_messages_by_users_view(_id:int):
             users[message["fromID"]]["last_message"] = message["content"]
             users[message["fromID"]]["last_message_date"] = message["date"]
     return users
+
+@message_router.get("/chat-history-with-user/")
+async def get_chat_history_with_user(_id:int, _target_id:int):
+    received_messages:list[dict] = adap.get_all_received_messages(_id)
+    sent_messages:list[dict] = adap.get_all_sent_messages(_id)
+    messages = received_messages + sent_messages
+    messages.sort(key=lambda x: x["date"])
+
+    user = adap.get_user(_target_id)
+    user = {
+        "messages": [],
+        "username": user["name"],
+        "user_id": user["id"],
+        "firebase_uid": user["firebase_uid"],
+        "last_message": None,
+        "last_message_date": None,
+        "last_seen": user["last_seen"],
+        "unseen_messages": 0,
+    }
+
+    for message in messages:
+        if message["fromID"] == _target_id or message["toID"] == _target_id:
+            user["messages"].append(message)
+            user["last_message"] = message["content"]
+            user["last_message_date"] = message["date"]
+            if message["fromID"] == _target_id and message["seen"] == 0:
+                user["unseen_messages"] += 1
+    return user
+
 
 @message_router.delete("/delete-message/")
 async def delete_message(_id:int):
