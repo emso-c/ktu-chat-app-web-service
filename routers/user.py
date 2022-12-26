@@ -76,7 +76,9 @@ async def login(user:UserLogin):
         return {"error": "Login failed"}
 
     user = parse_user(found_user)
-    if user not in sessions:
+    print([user.id for id in sessions], user.id)
+    if user.id not in [user.id for user in sessions]:
+        print("session added", user.id)
         sessions.append(user)
     db.update_user_is_online(user.id, True)
     return {"message": "Login successful", "username": user.username, "id": user.id}
@@ -91,8 +93,12 @@ async def logout(user:UserLogout):
         return {"message": "Logout failed"}
 
     user = parse_user(found_user)
-    if user in sessions:
-        sessions.remove(user)
+    if user.id in [user.id for user in sessions]:
+        for session in sessions:
+            if session.id == user.id:
+                sessions.remove(session)
+                break
+        print("session removed", user.id)
     db.update_user_is_online(user.id, False)
     db.update_user_last_seen(user.id)
     return {"message": "Logout successful"}
