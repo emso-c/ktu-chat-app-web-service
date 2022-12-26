@@ -111,6 +111,13 @@ async def get_chat_history_with_user(_id:int, _target_id:int):
                 user["unseen_messages"] += 1
     return user
 
+newly_seen_messages_exists = False
+@message_router.get("/set-message-seen/")
+async def set_message_seen(_id:int):
+    db.set_message_seen(_id, True)
+    global newly_seen_messages_exists
+    newly_seen_messages_exists = True
+    return {"status": "success"}
 
 @message_router.delete("/delete-message/")
 async def delete_message(_id:int):
