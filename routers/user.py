@@ -28,6 +28,16 @@ async def get_user_by_id(_id:int):
         return {"error": "User not found"}
     return user
 
+@user_router.get("/get-user-by-username/")
+async def get_user_by_username(username:str):
+    # TODO security issue do not return password 
+    if not username:
+        return {"error": "Invalid username"}
+    user = adap.get_user_by_username(username)
+    if not user:
+        return {"error": "User not found"}
+    return user
+
 @user_router.post("/register/")
 async def register(user:UserRegister):
     if not user.username or not user.password or not user.firebase_uid:
