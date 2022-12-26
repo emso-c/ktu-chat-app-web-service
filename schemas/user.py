@@ -11,6 +11,7 @@ class UserBase(BaseModel):
 
 class User(UserBase):
     id:int
+    last_seen:str=None
 
 
 class UserLogin(UserBase):
