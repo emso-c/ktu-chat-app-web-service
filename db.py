@@ -136,6 +136,16 @@ class DBEngine:
         self.con.commit()
         return self.get_user(user_id)
     
+    def update_user_name(self, user_id:int, name:str):
+        self.cur.execute("UPDATE users SET name=? WHERE id=?", (name, user_id))
+        self.con.commit()
+        return self.get_user(user_id)
+    
+    def update_user_password(self, user_id:int, password:str):
+        self.cur.execute("UPDATE users SET password=? WHERE id=?", (password, user_id))
+        self.con.commit()
+        return self.get_user(user_id)
+    
     def set_message_seen(self, message_id:int, seen:bool):
         self.cur.execute("UPDATE messages SET seen=? WHERE id=?", (seen, message_id))
         self.con.commit()

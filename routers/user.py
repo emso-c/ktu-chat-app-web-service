@@ -113,3 +113,19 @@ async def update_typing(_id:int, is_typing:bool):
         return {"error": "User not found"}
     db.update_user_is_typing(_id, is_typing)
     return {"message": "Update successful"}
+
+@user_router.post("/update-user/")
+async def update_user(user:UserUpdate):
+    if not user.id:
+        return {"error": "Invalid id"}
+    if not adap.get_user(user.id):
+        return {"error": "User not found"}
+    if user.status:
+        db.update_user_status(user.id, user.status)
+    if user.username:
+        db.update_user_name(id, user.username)
+    if user.password:
+        db.update_user_password(id, user.password)
+    if user.photo_url:
+        db.update_user_photo_url(id, user.photo_url)
+    return {"message": "Update successful"}
