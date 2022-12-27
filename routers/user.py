@@ -1,6 +1,6 @@
 
 from db import DBAdapter, DBEngine
-from schemas.user import UserLogin, UserLogout, UserRegister, FirebaseUser
+from schemas.user import UserLogin, UserLogout, UserRegister, FirebaseUser, UserUpdate
 from fastapi import APIRouter
 from session_manager import sessions
 from utils import parse_user
@@ -103,3 +103,13 @@ async def logout(user:UserLogout):
 @user_router.get("/sessions/")
 async def sessions_view():
     return sessions
+
+@user_router.get("/update-typing/")
+async def update_typing(_id:int, is_typing:bool):
+    if not _id:
+        return {"error": "Invalid id"}
+    user = adap.get_user(_id)
+    if not user:
+        return {"error": "User not found"}
+    db.update_user_is_typing(_id, is_typing)
+    return {"message": "Update successful"}
