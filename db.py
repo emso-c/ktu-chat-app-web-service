@@ -15,10 +15,12 @@ class DBEngine:
     def info(self):
         return self.cur.execute("SELECT * FROM sqlite_master WHERE type='table'").fetchall()
 
-    def add_user(self, name:str, password:str, firebase_uid:str, date:str="", photo_url:str="") -> int:
+    def add_user(self, name:str, password:str, firebase_uid:str, date:str="", photo_url:str="", ) -> int:
         if not date:
             date = date or datetime.now().strftime("%d-%m-%Y %H:%M:%S")
-        self.cur.execute("INSERT INTO users (name, password, firebase_uid, last_seen, photo_url) VALUES (?, ?, ?, ?, ?)", (name, password, firebase_uid, date, photo_url))
+        self.cur.execute(
+            "INSERT INTO users (name, password, firebase_uid, last_seen, photo_url, is_online, is_typing, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (name, password, firebase_uid, date, photo_url, False, False, ""))
         self.con.commit()
         return self.cur.lastrowid
 
