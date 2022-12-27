@@ -35,3 +35,10 @@ class UserLogout(BaseModel):
 class UserMessage(BaseModel):
     id:int
     content:str
+
+class UserUpdate(BaseModel):
+    id:int
+    status:str=None
+    username:str=None
+    password:str=None
+    photo_url:str=None
