@@ -7,6 +7,7 @@ class DBEngine:
         self.cur = self.con.cursor()
         self.cur.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, password TEXT, firebase_uid TEXT, last_seen TEXT, photo_url TEXT, is_online BOOLEAN, is_typing BOOLEAN, status TEXT)")
         self.cur.execute("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, fromID INTEGER, toID INTEGER, content TEXT, date TEXT, seen BOOLEAN DEFAULT 0)")
+        self.cur.execute("CREATE TABLE IF NOT EXISTS statuses (id INTEGER PRIMARY KEY, user_id INTEGER, image_url TEXT, date TEXT)")
         self.con.commit()
 
     def __del__(self):
@@ -150,6 +151,25 @@ class DBEngine:
         self.cur.execute("UPDATE messages SET seen=? WHERE id=?", (seen, message_id))
         self.con.commit()
         return self.get_message(message_id)
+    
+
+    def get_statuses(self) -> list:
+        return self.cur.execute("SELECT * FROM statuses").fetchall()
+    
+    def get_status(self, status_id:int) -> tuple:
+        return self.cur.execute("SELECT * FROM statuses WHERE id=?", (status_id,)).fetchone()
+    
+    def add_status(self, user_id:int, image_url:str, date:str=None):
+        if not date:
+            date = datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+        self.cur.execute("INSERT INTO statuses VALUES (null, ?, ?, ?)", (user_id, image_url, date))
+        self.con.commit()
+        return self.get_status(self.cur.lastrowid)
+    
+    def delete_status(self, status_id:int):
+        self.cur.execute("DELETE FROM statuses WHERE id=?", (status_id,))
+        self.con.commit()    
+
 
 class DBAdapter:
     """A class to convert database responses to JSON format"""
@@ -211,6 +231,16 @@ class DBAdapter:
         if not user:
             return None
         return _user_to_dict(user)
+    
+    def get_status(self, status_id:int) -> dict:
+        status = self.db.get_status(status_id)
+        if not status:
+            return None
+        return _status_to_dict(status)
+    
+    def get_statuses(self) -> list:
+        statuses = self.db.get_statuses()
+        return [_status_to_dict(status) for status in statuses]
 
 def _user_to_dict(user:list) -> dict:
     return {
@@ -233,6 +263,14 @@ def _message_to_dict(message:list) -> dict:
         "content": message[3],
         "date": message[4],
         "seen": message[5]
+    }
+
+def _status_to_dict(status:list) -> dict:
+    return {
+        "id": status[0],
+        "user_id": status[1],
+        "image_url": status[2],
+        "date": status[3]
     }
 
 """ USAGE EXAMPLE 

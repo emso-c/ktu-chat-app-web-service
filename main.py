@@ -4,11 +4,13 @@ import socket
 
 from routers.message import message_router
 from routers.user import user_router
+from routers.status import status_router
 
 app = FastAPI()
 
 app.include_router(message_router)
 app.include_router(user_router)
+app.include_router(status_router)
 
 @app.get("/")
 async def root():
