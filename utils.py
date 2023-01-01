@@ -1,3 +1,4 @@
+from datetime import datetime
 from schemas.message import Message
 from schemas.user import User
 
@@ -26,3 +27,12 @@ def parse_user(user:dict) -> User:
         is_typing=user["is_typing"],
         status=user["status"]
     )
+
+def sort_dates(messages: list[dict]) -> list[dict]:
+    for message in messages:
+        message['date'] = datetime.strptime(message['date'], "%d-%m-%Y %H:%M:%S")
+    
+    messages.sort(key=lambda x: x['date'])
+    
+    for message in messages:
+        message['date'] = message['date'].strftime("%d-%m-%Y %H:%M:%S")

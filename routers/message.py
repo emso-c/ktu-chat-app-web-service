@@ -6,7 +6,7 @@ import asyncio
 from sse_starlette.sse import EventSourceResponse
 
 from schemas.message import Message, MessageSend
-from utils import parse_message, parse_user
+from utils import parse_message, parse_user, sort_dates
 from session_manager import all_messages, get_recently_received_messages, message_queue
 
 message_router = APIRouter()
@@ -43,7 +43,7 @@ async def chat_history(_id:int):
     received_messages:list[dict] = adap.get_all_received_messages(_id)
     sent_messages:list[dict] = adap.get_all_sent_messages(_id)
     messages = received_messages + sent_messages
-    messages.sort(key=lambda x: x["date"])
+    sort_dates(messages)
     users = {}
     for message in messages:
         if message["fromID"] is _id:
@@ -88,7 +88,7 @@ async def get_chat_history_with_user(_id:int, _target_id:int):
     received_messages:list[dict] = adap.get_all_received_messages(_id)
     sent_messages:list[dict] = adap.get_all_sent_messages(_id)
     messages = received_messages + sent_messages
-    messages.sort(key=lambda x: x["date"])
+    sort_dates(messages)
 
     user = adap.get_user(_target_id)
     user = {
