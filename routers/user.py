@@ -123,9 +123,9 @@ async def update_user(user:UserUpdate):
     if user.status:
         db.update_user_status(user.id, user.status)
     if user.username:
-        db.update_user_name(id, user.username)
+        db.update_user_name(user.id, user.username)
     if user.password:
-        db.update_user_password(id, user.password)
+        db.update_user_password(user.id, user.password)
     if user.photo_url:
-        db.update_user_photo_url(id, user.photo_url)
+        db.update_user_photo_url(user.id, user.photo_url)
     return {"message": "Update successful"}
